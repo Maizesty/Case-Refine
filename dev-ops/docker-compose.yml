@@ -1,0 +1,206 @@
+version: '3.8'
+
+services:
+  triton-server1:
+    image: custom_triton:latest
+    user: triton-server
+    volumes:
+      - type: bind
+        source: /home/yssun/python_backend/models
+        target: /models
+    ports:
+      - "18886:8001"
+    command: tritonserver --model-repository=/models
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+    runtime: nvidia
+    depends_on:
+    - ps
+  triton-server2:
+    image: custom_triton:latest
+    user: triton-server
+    volumes:
+      - type: bind
+        source: /home/yssun/python_backend/models
+        target: /models
+    ports:
+      - "18887:8001"
+    command: tritonserver --model-repository=/models
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+    runtime: nvidia
+    depends_on:
+    - ps
+  triton-server3:
+    image: custom_triton:latest
+    user: triton-server
+    volumes:
+      - type: bind
+        source: /home/yssun/python_backend/models
+        target: /models
+    ports:
+      - "18888:8001"
+    command: tritonserver --model-repository=/models
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+    runtime: nvidia
+    depends_on:
+    - ps
+  triton-server4:
+    image: custom_triton:latest
+    user: triton-server
+    volumes:
+      - type: bind
+        source: /home/yssun/python_backend/models
+        target: /models
+    ports:
+      - "18889:8001"
+    command: tritonserver --model-repository=/models
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+    runtime: nvidia
+    depends_on:
+    - ps
+  triton-server5:
+    image: custom_triton:latest
+    user: triton-server
+    volumes:
+      - type: bind
+        source: /home/yssun/python_backend/models
+        target: /models
+    ports:
+      - "18890:8001"
+    command: tritonserver --model-repository=/models
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+    runtime: nvidia
+    depends_on:
+    - ps
+  triton-server6:
+    image: custom_triton:latest
+    user: triton-server
+    volumes:
+      - type: bind
+        source: /home/yssun/python_backend/models
+        target: /models
+    ports:
+      - "18891:8001"
+    command: tritonserver --model-repository=/models
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+    runtime: nvidia
+    depends_on:
+    - ps
+  triton-server7:
+    image: custom_triton:latest
+    user: triton-server
+    volumes:
+      - type: bind
+        source: /home/yssun/python_backend/models
+        target: /models
+    ports:
+      - "18892:8001"
+    command: tritonserver --model-repository=/models
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+    runtime: nvidia
+    depends_on:
+    - ps
+  triton-server8:
+    image: custom_triton:latest
+    user: triton-server
+    volumes:
+      - type: bind
+        source: /home/yssun/python_backend/models
+        target: /models
+    ports:
+      - "18893:8001"
+    command: tritonserver --model-repository=/models
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+    runtime: nvidia
+    depends_on:
+    - ps
+  triton-server9:
+    image: custom_triton:latest
+    user: triton-server
+    volumes:
+      - type: bind
+        source: /home/yssun/python_backend/models
+        target: /models
+    ports:
+      - "18894:8001"
+    command: tritonserver --model-repository=/models
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+    runtime: nvidia
+    depends_on:
+    - ps
+  triton-server10:
+    image: custom_triton:latest
+    user: triton-server
+    volumes:
+      - type: bind
+        source: /home/yssun/python_backend/models
+        target: /models
+    ports:
+      - "18895:8001"
+    command: tritonserver --model-repository=/models
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+    runtime: nvidia
+    depends_on:
+    - ps
+  triton-server11:
+    image: custom_triton:latest
+    user: triton-server
+    volumes:
+      - type: bind
+        source: /home/yssun/python_backend/models
+        target: /models
+    ports:
+      - "18896:8001"
+    command: tritonserver --model-repository=/models
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+    runtime: nvidia
+    depends_on:
+    - ps
+  triton-server12:
+    image: custom_triton:latest
+    user: triton-server
+    volumes:
+      - type: bind
+        source: /home/yssun/python_backend/models
+        target: /models
+    ports:
+      - "18897:8001"
+    command: tritonserver --model-repository=/models
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+    runtime: nvidia
+    depends_on:
+    - ps
+  ps:
+    image: nvcr.io/nvidia/merlin/merlin-hugectr:23.12  # 替换为你的后端服务镜像
+    volumes:
+    - /home/yssun/hugectr_backend:/hugectr_backend
+    ports:
+      - "18001:8001"  # 将容器的8887端口映射到宿主机的8887端口
+    command: tritonserver --model-repository=/hugectr_backend/hps_demo --backend-config=hps,ps=/hugectr_backend/hps_demo/hps_embedding/hps_embedding.json 
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+    runtime: nvidia

@@ -1,0 +1,25 @@
+name: "sync_query"
+backend: "python"
+max_batch_size: 32
+
+input [
+  {
+    name: "IN"
+    data_type: TYPE_INT64
+    dims: [ 26 ]
+  }
+]
+output [
+  {
+    name: "output"
+    data_type: TYPE_FP32
+    dims: [ 1 ]
+  }
+]
+instance_group [{
+    count: 10
+   kind: KIND_CPU 
+   }]
+dynamic_batching {
+    max_queue_delay_microseconds: 1000
+}

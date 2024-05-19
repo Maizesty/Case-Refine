@@ -1,0 +1,18 @@
+platform: "onnxruntime_onnx"
+max_batch_size: 128
+input [
+  {
+    name: "/linear/fc/Gather_output_0"
+    data_type: TYPE_FP32
+    dims: [26,1]
+  },
+  {
+    name: "/embedding/embedding/Gather_output_0"
+    data_type: TYPE_FP32
+    dims: [26,16]
+  }
+]
+instance_group [{ kind: KIND_GPU }]
+dynamic_batching {
+    max_queue_delay_microseconds: 100
+}
