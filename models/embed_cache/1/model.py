@@ -7,7 +7,7 @@ import tritonclient.grpc as grpcclient
 import triton_python_backend_utils as pb_utils
 from tritonclient.utils import *
 import os
-
+import redis
 
 class TritonPythonModel:
     def initialize(self, args):
@@ -38,7 +38,29 @@ class TritonPythonModel:
         self.triton_client = grpcclient.InferenceServerClient(url="49.52.27.77:18001")
         # Convert Triton types to numpy types
         self.out_dtype = pb_utils.triton_string_to_numpy(out_config["data_type"])
+        self.redis_client = redis.Redis(host='49.52.27.77', port=6379, db=0)
+        self.hit_metric_family = pb_utils.MetricFamily(
+            name="hit",
+            description="hit",
+            kind=pb_utils.MetricFamily.COUNTER,  # or pb_utils.MetricFamily.GAUGE
+        )
 
+        # Create a Metric object under the MetricFamily object. The 'labels'
+        # is a dictionary of key-value pairs. You can create multiple Metric
+        # objects under the same MetricFamily object with unique labels. Empty
+        # labels is allowed. The 'labels' parameter is optional. If you don't
+        # specify the 'labels' parameter, empty labels will be used.
+        self.hit_metric = self.hit_metric_family.Metric(
+            labels={"model": "embed_cache", "version": "1"}
+        )
+        self.total_metric_family = pb_utils.MetricFamily(
+            name="total",
+            description="total",
+            kind=pb_utils.MetricFamily.COUNTER,  # or pb_utils.MetricFamily.GAUGE
+        )
+        self.total_metric = self.total_metric_family.Metric(
+            labels={"model": "embed_cache", "version": "1"}
+        )
         # To keep track of response threads so that we can delay
         # the finalizing the model until all response threads
         # have completed.
@@ -67,14 +89,17 @@ class TritonPythonModel:
         result = numpy.random.rand(in_input.size//26,26,16).astype(out_dtype)
         
         need_key_dict = {}
+        cnt = 0
         for i,arr in enumerate(in_input):
             for j, id in enumerate(arr):
                 if id not in self.caches:
                     if id not in need_key_dict:
                         need_key_dict[id] = [(i,j)]
                     else :
+                        
                         need_key_dict[id].append((i,j))
                 else:
+                    cnt+=1
                     result[i][j] = self.caches[id]
         # fake the embedding that missed
         need_key = [i for i in need_key_dict.keys()]
@@ -84,16 +109,16 @@ class TritonPythonModel:
             # print("perfect")
             pass
         else:
-            
-            embed_arr = self.embed_remote_call(need_key)
             start = time.time()
+            # embed_arr = self.embed_remote_call(need_key)
+            embed_arr = self.embed_redis_call(need_key)
             for index , key in enumerate(need_key):
                 embed = embed_arr[index]
                 self.caches[key] = embed
                 for (i,j) in need_key_dict[key]:
                     result[i][j] = embed
             end = time.time()
-            print(f"time of remote{(end - start) * 1000}")
+            # print(f"time of remote{(end - start) * 1000}")
         # start_concat = time.time()
         # ll = [self.caches[j] for i  in in_input for j in  i  ]
         # result = numpy.array(ll).reshape(in_input.size//26,26,16).astype(out_dtype)
@@ -103,6 +128,8 @@ class TritonPythonModel:
         response = pb_utils.InferenceResponse(
             output_tensors=[out_output]
         )
+        self.hit_metric.increment(cnt)
+        self.total_metric.increment(len(in_input))
         return response
         # response_sender.send(response)
         # # print("当前进程的PID是：", os.getpid())
@@ -137,6 +164,16 @@ class TritonPythonModel:
         #     self.inflight_thread_count += 1
 
         # thread.start()
+        
+    def embed_redis_call(self,need_key):
+        keys = [f"key_{i}" for i in need_key]
+        arrays_bytes =  self.redis_client.mget(keys)
+        # for k, v in enumerate(arrays_bytes):
+        #     if v is None:
+        #         print(f"misskey : {keys[k]}")
+        arrays = [numpy.frombuffer(arr, dtype=numpy.float32) if arr else numpy.random.rand(1,16).astype(numpy.float32) for arr in arrays_bytes ]
+        return arrays
+        
     def embed_remote_call(self,need_key):
         model_name = "hps_embedding"
         need_key_len = len(need_key)

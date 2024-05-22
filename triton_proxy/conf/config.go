@@ -46,6 +46,7 @@ type Config struct {
 	Port                int         `yaml:"port"`
 	PartitionFile				string			`yaml:"partition_files"`
 	CacheSize						int64					`yaml:"cache_size"`
+	WarmUpTime					int64 				`yaml:"warm_up_times"`
 }
 
 // Location routing details of balancer

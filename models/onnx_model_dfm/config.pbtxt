@@ -14,7 +14,7 @@ input [
 ]
 instance_group [
   {
-    count: 10
+    count: 5
     kind: KIND_GPU
     gpus: [ 0 ]
   }

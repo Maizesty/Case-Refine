@@ -33,7 +33,8 @@ import time
 # contains some utility functions for extracting information from model_config
 # and converting Triton input/output types to numpy types.
 import triton_python_backend_utils as pb_utils
-
+# from onnxruntime import SessionOptions,ExecutionMode
+# import onnxruntime
 
 class TritonPythonModel:
     """Your Python model must use the same class name. Every Python model
@@ -72,6 +73,10 @@ class TritonPythonModel:
 
         # You must parse model_config. JSON string is not parsed here
         self.model_config = json.loads(args["model_config"])
+        # sess_opt = SessionOptions()
+        # sess_opt.execution_mode  = ExecutionMode.ORT_PARALLEL
+        # sess_opt.inter_op_num_threads = 2
+        # self.session = onnxruntime.InferenceSession("/models/onnx_model/1/model.onnx",sess_options=sess_opt,providers=['CUDAExecutionProvider', 'CPUExecutionProvider'] )
 
     def execute(self, requests):
         """`execute` must be implemented in every Python model. `execute`
@@ -101,6 +106,7 @@ class TritonPythonModel:
             req_id.append(request_key)
             shape_list.append(request_key.size)
         batched_req = np.concatenate(req_id, axis=0)
+        print(f"size of request:{len(requests)}")
         # For detailed explanation about the inputs of the repeat model, refer
         # to the example below:
         # https://github.com/triton-inference-server/python_backend/blob/r22.12/examples/decoupled/square_model.py
@@ -131,30 +137,36 @@ class TritonPythonModel:
                     infer_response, "OUT"
                 ).as_numpy()
         look_end = time.time()
+        look_time = look_end - look_start
         # print(f"look time:{(look_end - look_start)*1000}")
         query_start = time.time()
+        # query_result = self.session.run([],{"/embedding/embedding/Gather_output_0":response_sum,"/linear/fc/Gather_output_0":batched_req.astype(np.float32).reshape(batched_req.shape[0],batched_req.shape[1],1)})[0]
+        # print(query_result)
         query_request = pb_utils.InferenceRequest(
             model_name="onnx_model",
             inputs=[pb_utils.Tensor("/embedding/embedding/Gather_output_0", response_sum),pb_utils.Tensor("/linear/fc/Gather_output_0", batched_req.astype(np.float32).reshape(batched_req.shape[0],batched_req.shape[1],1))],
             requested_output_names=["output"],
-            preferred_memory = pb_utils. PreferredMemory(pb_utils.TRITONSERVER_MEMORY_CPU,0)
+            # preferred_memory = pb_utils.PreferredMemory(pb_utils.TRITONSERVER_MEMORY_CPU,0)
         )
         query_response = query_request.exec()
         if query_response.has_error():
             raise pb_utils.TritonModelException(query_response.error().message())
 
-        query_result = pb_utils.get_output_tensor_by_name(
-                    query_response, "output"
-                ).as_numpy()
+        # query_result = pb_utils.get_output_tensor_by_name(
+        #             query_response, "output"
+        #         ).as_numpy()
         offset = 0
         responses = []
         for i in shape_list:
             response = pb_utils.InferenceResponse(
-                output_tensors=[pb_utils.Tensor("output", query_result[offset:i])]
+                # output_tensors=[pb_utils.Tensor("output", query_result[offset:i])]
+                output_tensors=[pb_utils.Tensor("output", np.random.rand(1).astype(np.float32))]
             )
             offset = offset + i
             responses.append(response)
         query_end = time.time()
+        query_time = query_end - query_start
+        # print(f"query time: {query_time * 1000},look up: {look_time * 1000}")
         # print(f"query time:{(query_end - query_start)*1000}\n\n")
         # response = [
         #     pb_utils.InferenceResponse(

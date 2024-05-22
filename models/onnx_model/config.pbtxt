@@ -12,7 +12,11 @@ input [
     dims: [26,16]
   }
 ]
-instance_group [{ kind: KIND_GPU }]
+instance_group [  {
+    count: 5
+    kind: KIND_GPU
+    gpus: [ 0 ]
+  }]
 dynamic_batching {
     max_queue_delay_microseconds: 100
 }

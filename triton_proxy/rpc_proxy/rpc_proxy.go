@@ -147,6 +147,7 @@ func (h *PRCProxy)FasthttpInferRequest(httpContext *fasthttp.RequestCtx) {
 		httpContext.Error(err.Error(), fasthttp.StatusBadGateway)
 		return
 	}
+	
 	host, err := h.lb.Schedule("", rr)
 	if err != nil {
 		httpContext.Error(fmt.Sprintf("balance error: %s", err.Error()), fasthttp.StatusBadGateway)
@@ -156,7 +157,11 @@ func (h *PRCProxy)FasthttpInferRequest(httpContext *fasthttp.RequestCtx) {
 	defer h.lb.Done(host)
 	c := h.hostMap[host]
 	// result, err := cc.Infer(ctx, &infer.ReqData{Keys: rr.Keys[0]})
-	result := ModelInferRequest(*c,rr.Keys[0],"embed_cache","1")
+	start := time.Now()
+	result := ModelInferRequest(*c,rr.Keys[0],"sync_query","1")
+	end := time.Now()
+	duration := end.Sub(start)
+	fmt.Printf("running time: %s\n", duration)
 	if err != nil {
 		fmt.Println("can not greet to: ", host,err)
 		httpContext.Error(fmt.Sprintf("can not greet to: ", host,err), fasthttp.StatusInternalServerError)
@@ -260,7 +265,7 @@ func ModelInferRequest(client triton.GRPCInferenceServiceClient, idx []int32, mo
 	inferOutputs := []*triton.ModelInferRequest_InferRequestedOutputTensor{
 		&triton.ModelInferRequest_InferRequestedOutputTensor{
 			// Name: "output",
-			Name: "OUT",
+			Name: "output",
 
 		},
 	}

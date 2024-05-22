@@ -1,6 +1,6 @@
 name: "embed_cache"
 backend: "python"
-max_batch_size: 1 
+max_batch_size: 32 
 input [
   {
     name: "IN"
@@ -21,6 +21,6 @@ dynamic_batching {
 parameters: [
   {
     key: "cache_size"
-    value: { string_value: "30000" }
+    value: { string_value: "10000" }
   }
 ]

@@ -3,7 +3,9 @@ package rpc_scheduler
 import (
 	"case_proxy/cnt"
 	"case_proxy/conf"
+	// "fmt"
 	"math/rand"
+	"sync/atomic"
 	"time"
 
 	"github.com/dgraph-io/ristretto"
@@ -11,6 +13,8 @@ import (
 
 type NaiveCache struct {
 	BaseRPCScheduler
+	i atomic.Uint64
+	WarmUpTime int64
 	Caches map[int] *ristretto.Cache
 	rnd *rand.Rand
 }
@@ -32,6 +36,8 @@ func NewNaiveCache(workers []string) RPCScheduler{
 			Workers: workers,
 			Cnt: cnt.Cnter,
 		},
+		WarmUpTime: conf.Conf.WarmUpTime,
+		i: atomic.Uint64{},
 		rnd: rand.New(rand.NewSource(time.Now().UnixNano())),
 	}
 	config := &ristretto.Config{
@@ -52,10 +58,29 @@ func NewNaiveCache(workers []string) RPCScheduler{
 
 
 func (n *NaiveCache) Schedule(_ string, r Req) (string, error) {
-	var hostIndex = -1
-	var maxCnt = 0
-
 	keys := r.Keys
+	index := n.i.Add(1)
+	if index < uint64(n.WarmUpTime){
+		cache := n.Caches[int(index)]
+		// fmt.Println(cache.Len())
+		for _, a := range keys{
+			for _ ,aa := range a {
+				cache.Set(aa,aa,1)
+			}
+			
+		}
+		// fmt.Println(cache.Len())
+		host := n.Workers[index%uint64(len(n.Workers))]
+		return host, nil
+	}
+
+
+
+
+	var hostIndex = make([]int,0)
+	var maxCnt = -1
+
+
 
 	for i :=0; i< len(n.Workers);i++{
 			cache := n.Caches[i]
@@ -70,20 +95,26 @@ func (n *NaiveCache) Schedule(_ string, r Req) (string, error) {
 				}
 
 			}
+			if cnt == maxCnt{
+				hostIndex = append(hostIndex, i)
+			}
 			if cnt > maxCnt{
 				maxCnt  = cnt
-				hostIndex = i
+				hostIndex = make([]int,0)
+				hostIndex = append(hostIndex, i)
 			}
 	}
-	if hostIndex == -1{
-		hostIndex = n.rnd.Intn(len(n.Workers))
+	if len(hostIndex) == 0{
+		index := n.rnd.Intn(len(n.Workers))
+		return n.Workers[index],nil
 	}
-	cache := n.Caches[hostIndex]
+	curIndex := hostIndex[(rand.Intn(len(hostIndex)))]
+	cache := n.Caches[curIndex]
 	for _, a := range keys{
 		for _ ,aa := range a {
 			cache.Set(aa,aa,1)
 		}
 	}
-	return n.Workers[hostIndex],nil
+	return n.Workers[curIndex],nil
 
 }

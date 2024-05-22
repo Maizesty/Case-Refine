@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  triton-server1:
+    image: custom_triton:onnx
+    user: triton-server
+    volumes:
+      - type: bind
+        source: /home/yssun/python_backend/models
+        target: /models
+    ports:
+      - "8001:8001"
+      - "8000:8000"
+    command: tritonserver --model-repository=/models
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+    runtime: nvidia

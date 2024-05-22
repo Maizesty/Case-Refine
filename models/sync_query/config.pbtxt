@@ -17,8 +17,8 @@ output [
   }
 ]
 instance_group [{
-    count: 10
-   kind: KIND_CPU 
+    count: 5
+   kind: KIND_GPU 
    }]
 dynamic_batching {
     max_queue_delay_microseconds: 1000
